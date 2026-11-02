@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta name="robots" content="noindex,nofollow"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head>
+<meta name="robots" content="noindex,nofollow"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>안택스 인사이트 일일 리포트</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
@@ -186,7 +187,7 @@ function renderTabs(){
     let dv="";
     if(!CH[k].weekly){let s=0,any=false; for(const vid in videos){const c=snap(cur,vid,k); if(c){any=true; s+=delta(c,prevSnap(cur,vid,k),"views")||0;}} dv=any?`<span class="d">${dStr(s)}</span>`:"";}
     else{const dd=days[dayIdx(cur)]||{}; const bt=dd.naverWeekly?.blog?.today?.views; let cs=0,ca=false; for(const vid in videos){const c=snap(cur,vid,"naverclip"); if(c){ca=true; cs+=delta(c,prevSnap(cur,vid,"naverclip"),"views")||0;}}
-      const parts=[]; if(bt!=null) parts.push("블 "+dStr(bt)); if(ca) parts.push("클 "+dStr(cs)); dv=parts.length?`<span class="d" title="블로그: 당일 글 조회수 · 클립: 직전 클립 수집일 대비 증가">${parts.join(" · ")}</span>`:"";}
+      dv=(bt!=null||ca)?`<span class="d" title="블로그 당일 글 조회수 + 클립 직전 수집일 대비 증가">${dStr((bt||0)+cs)}</span>`:"";}
     return `<button class="tab" role="tab" aria-selected="${k===tab}" data-k="${k}">${CH[k].name}${dv}</button>`}).join("");
 }
 
@@ -222,14 +223,14 @@ function render(){
 
   if(lv) html+=`<div class="card"><div class="card-h"><h2>시청자 타겟</h2><span class="hint">최신 영상 ${esc(latest[1].no)} 기준</span></div>${audienceBlock(lv.audience)}</div>`;
 
-  html+=`<div class="card chart"><div class="card-h"><h2>일별 조회 증가</h2><span class="hint">${c.name} · 전 영상 합산</span></div>${trend()}</div>`;
+  html+=`<div class="card chart"><div class="card-h"><h2>일별 조회 증가</h2><span class="hint">${c.name} · 전 영상 합산 · 좌우로 밀어 전체 기간 보기</span></div>${trend()}</div>`;
 
   const shown=showAll?vids:vids.slice(0,5);
   html+=`<div class="card-h" style="padding:6px 2px 0"><h2>영상별 성과</h2><span class="hint">최신순 · ${vids.length}개</span></div>`;
   html+= vids.length? shown.map(([id,v])=>videoCard(id,v)).join("") : `<div class="card empty">${cur} 기준 수집된 영상이 없습니다.</div>`;
   if(vids.length>5&&!showAll) html+=`<button class="more" id="more">이전 영상 ${vids.length-5}개 더 보기</button>`;
   html+=fbBlock();
-  $("#view").innerHTML=html;
+  $("#view").innerHTML=html; scrollTrend();
   $("#more")?.addEventListener("click",()=>{showAll=true;render();});
 }
 
@@ -279,15 +280,33 @@ function naverBlock(day){
   <div class="aud-g"><span class="lbl">성별</span><div class="split"><div class="sp-a" style="width:${w.male||0}%"></div><div class="sp-b"></div></div><div class="split-l"><span>남성 ${w.male??"—"}%</span><span>여성 ${w.female??"—"}%</span></div></div>
   ${age.length?`<div class="aud-g"><span class="lbl">연령 (근사치)</span><div class="bars">${age.map(([k,v])=>`<div class="bar-row"><span class="lab">${esc(k)}</span><div class="track"><div class="fill" style="width:${(v||0)/mx*100}%"></div></div><span class="val">${v}%</span></div>`).join("")}</div></div>`:""}
   ${w.note?`<p class="note" style="margin:0">${esc(w.note)}</p>`:""}</div>`;}
-  // ---- 네이버 클립 영상별 누적: 가장 최근 naverclip 있는 날
+  // ---- 네이버 클립 (영상) 대시보드: 가장 최근 naverclip 있는 날 vs 그 이전 수집일
   let j=dayIdx(cur); while(j>=0 && !Object.values(days[j].metrics||{}).some(m=>m&&m.naverclip)) j--;
   if(j>=0){const dc=days[j];
-   const rows=Object.entries(videos).filter(([id])=>(dc.metrics||{})[id]?.naverclip).sort((a,b)=>(b[1].uploaded||"").localeCompare(a[1].uploaded||""));
-   const sum=rows.reduce((s,[id])=>s+(Number(dc.metrics[id].naverclip.views)||0),0);
-   html+=`<div class="card"><div class="card-h"><h2>네이버 클립 (영상) · 영상별 누적</h2><span class="hint">${esc(dc.date)} 기준 · 합계 ${fmt(sum)}회</span></div>
-   <div class="tbl"><table><thead><tr><th>영상</th><th>업로드</th><th>조회</th><th>좋아요</th></tr></thead><tbody>
-   ${rows.map(([id,v])=>{const m=dc.metrics[id].naverclip; return `<tr><td>${esc(v.no)} ${esc((v.title||"").slice(0,22))}</td><td>${esc((v.uploaded||"").slice(5))}</td><td>${fmt(m.views)}</td><td>${fmt(m.likes)}</td></tr>`}).join("")}
-   </tbody></table></div><p class="note" style="margin:0">Clip Creators 콘텐츠 목록 기준 누적값. 블로그 글 조회수와 별개입니다.</p></div>`;}
+   let k=j-1; while(k>=0 && !Object.values(days[k].metrics||{}).some(m=>m&&m.naverclip)) k--;
+   const dp=k>=0?days[k]:null;
+   const rows=Object.entries(videos).filter(([id])=>(dc.metrics||{})[id]?.naverclip).map(([id,v])=>{const m=dc.metrics[id].naverclip, p=dp?.metrics?.[id]?.naverclip; return {id,v,views:Number(m.views)||0,likes:Number(m.likes)||0,inc:(Number(m.views)||0)-(Number(p?.views)||0),isNew:!p}});
+   const sum=rows.reduce((s,r)=>s+r.views,0), likes=rows.reduce((s,r)=>s+r.likes,0), inc=rows.reduce((s,r)=>s+r.inc,0);
+   const byViews=rows.slice().sort((a,b)=>b.views-a.views), top=byViews.slice(0,10), mx=Math.max(1,...top.map(r=>r.views));
+   const byInc=rows.slice().sort((a,b)=>b.inc-a.inc).slice(0,5);
+   const top3=byViews.slice(0,3).reduce((s,r)=>s+r.views,0);
+   const lab=r=>`${esc(r.v.no)} ${esc((r.v.title||"").slice(0,16))}`;
+   html+=`<div class="card"><div class="card-h"><h2>네이버 클립 (영상)</h2><span class="hint">${esc(dc.date)} 수집${dp?" · 비교 기준 "+esc(dp.date):""}</span></div>
+   <div class="metrics">
+    <div class="m"><span class="t">누적 조회</span><span class="v">${fmt(sum)}</span><span class="dlt">${dp?dStr(inc)+" ("+esc(dp.date.slice(5))+" 대비)":"첫 수집"}</span></div>
+    <div class="m"><span class="t">누적 좋아요</span><span class="v">${fmt(likes)}</span></div>
+    <div class="m"><span class="t">추적 영상</span><span class="v">${rows.length}</span></div>
+    <div class="m"><span class="t">상위 3편 비중</span><span class="v">${sum?Math.round(top3/sum*100):0}%</span><span class="dlt zero">조회 쏠림 정도</span></div>
+   </div></div>
+   <div class="card"><div class="card-h"><h2>클립 조회 상위 영상</h2><span class="hint">누적 조회 · 상위 10편</span></div>
+   <div class="bars">${top.map(r=>`<div class="bar-row tr-row" style="grid-template-columns:150px minmax(0,1fr) 56px"><span class="lab" title="${esc(r.v.title||"")}">${lab(r)}</span><div class="track"><div class="fill" style="width:${r.views/mx*100}%"></div></div><span class="val">${fmt(r.views)}</span></div>`).join("")}</div></div>
+   ${dp?`<div class="card"><div class="card-h"><h2>클립 증가 상위 영상</h2><span class="hint">${esc(dp.date.slice(5))} → ${esc(dc.date.slice(5))}</span></div>
+   <div class="sig">${byInc.map(r=>`<div class="s"><span class="k" style="white-space:normal">${lab(r)}${r.isNew?' <span class="pill">신규</span>':""}</span><span class="v">${dStr(r.inc)}</span></div>`).join("")}</div>
+   <p class="note" style="margin:0">신규는 ${esc(dp.date.slice(5))} 이후 올라온 영상(증가=누적).</p></div>`:""}
+   <div class="card"><div class="card-h"><h2>클립 영상별 누적</h2><span class="hint">최신순 · ${rows.length}편</span></div>
+   <div class="tbl"><table><thead><tr><th>영상</th><th>업로드</th><th>조회</th><th>증가</th><th>좋아요</th></tr></thead><tbody>
+   ${rows.sort((a,b)=>(b.v.uploaded||"").localeCompare(a.v.uploaded||"")).map(r=>`<tr><td>${esc(r.v.no)} ${esc((r.v.title||"").slice(0,22))}</td><td>${esc((r.v.uploaded||"").slice(5))}</td><td>${fmt(r.views)}</td><td>${dp?dStr(r.inc):"—"}</td><td>${fmt(r.likes)}</td></tr>`).join("")}
+   </tbody></table></div><p class="note" style="margin:0">Clip Creators 콘텐츠 목록 기준 누적값. 블로그 글 조회수와 별개이며, 월 1회 정도 수동 수집합니다.</p></div>`;}
   return html;
 }
 function fbBlock(){
@@ -348,14 +367,16 @@ function videoCard(id,v){
 function trend(){
   const pts=days.map(d=>{let s=0,any=false; for(const vid in (d.metrics||{})){const x=d.metrics[vid][tab]; if(x){any=true; s+=delta(x,prevSnap(d.date,vid,tab),"views")||0;}} return any?{d:d.date,v:s}:null}).filter(Boolean);
   if(pts.length<2) return `<div class="empty">2일 이상 쌓이면 추이가 표시됩니다 (현재 ${pts.length}일)</div>`;
-  const view=pts.slice(-14), W=640,H=180,L=44,R=8,T=18,B=26, max=Math.max(1,...view.map(p=>p.v))*1.15;
+  const view=pts, BW=34, L=58,R=10,T=20,B=26,H=190, W=Math.max(640,L+R+view.length*BW), max=Math.max(1,...view.map(p=>p.v))*1.15;
   const bw=(W-L-R)/view.length, y=v=>T+(H-T-B)*(1-v/max);
   const ticks=[0,Math.round(max/2),Math.round(max)];
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="일별 조회 증가">
-    ${ticks.map(t=>`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${fmt(t)}</text>`).join("")}
-    ${view.map((p,i)=>{const x=L+i*bw+bw*.2,w=bw*.6,h=Math.max(1,y(0)-y(p.v));return `<rect x="${x}" y="${y(0)-h}" width="${w}" height="${h}" rx="3" fill="${p.d===cur?"var(--accent)":"var(--bar)"}"><title>${p.d} · ${fmt(p.v)}</title></rect><text x="${x+w/2}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--f-num)">${p.d.slice(5)}</text>${p.d===cur?`<text x="${x+w/2}" y="${y(p.v)-5}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--fg)" font-family="var(--f-num)">${fmt(p.v)}</text>`:""}`}).join("")}
-  </svg>`;
+  const tk=t=>t>=10000?(Math.round(t/1000)/10)+"만":fmt(t);
+  return `<div class="trend-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px;max-width:none;height:auto" role="img" aria-label="일별 조회 증가">
+    ${ticks.map(t=>`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${tk(t)}</text>`).join("")}
+    ${view.map((p,i)=>{const x=L+i*bw+bw*.2,w=bw*.6,h=Math.max(1,y(0)-y(p.v));return `<rect data-d="${p.d}" x="${x}" y="${y(0)-h}" width="${w}" height="${h}" rx="3" fill="${p.d===cur?"var(--accent)":"var(--bar)"}"><title>${p.d} · ${fmt(p.v)}</title></rect><text x="${x+w/2}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--f-num)">${p.d.slice(5)}</text>${p.d===cur?`<text x="${x+w/2}" y="${y(p.v)-5}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--fg)" font-family="var(--f-num)">${tk(p.v)}</text>`:""}`}).join("")}
+  </svg></div>`;
 }
+function scrollTrend(){const sc=document.querySelector(".trend-scroll"); if(!sc) return; const r=sc.querySelector(`rect[data-d="${cur}"]`); if(r){const x=Number(r.getAttribute("x")); sc.scrollLeft=Math.max(0,x-sc.clientWidth/2);} else sc.scrollLeft=sc.scrollWidth;}
 
 $("#tabs").addEventListener("click",e=>{const b=e.target.closest(".tab"); if(!b) return; tab=b.dataset.k; showAll=false; try{localStorage.setItem("ai-tab",tab)}catch{} render(); window.scrollTo({top:0});});
 $("#date-pick").addEventListener("change",e=>{cur=e.target.value; render();});
