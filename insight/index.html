@@ -185,6 +185,8 @@ function renderTabs(){
   $("#tabs").innerHTML=ORDER.map(k=>{
     let dv="";
     if(!CH[k].weekly){let s=0,any=false; for(const vid in videos){const c=snap(cur,vid,k); if(c){any=true; s+=delta(c,prevSnap(cur,vid,k),"views")||0;}} dv=any?`<span class="d">${dStr(s)}</span>`:"";}
+    else{const dd=days[dayIdx(cur)]||{}; const bt=dd.naverWeekly?.blog?.today?.views; let cs=0,ca=false; for(const vid in videos){const c=snap(cur,vid,"naverclip"); if(c){ca=true; cs+=delta(c,prevSnap(cur,vid,"naverclip"),"views")||0;}}
+      const parts=[]; if(bt!=null) parts.push("블 "+dStr(bt)); if(ca) parts.push("클 "+dStr(cs)); dv=parts.length?`<span class="d" title="블로그: 당일 글 조회수 · 클립: 직전 클립 수집일 대비 증가">${parts.join(" · ")}</span>`:"";}
     return `<button class="tab" role="tab" aria-selected="${k===tab}" data-k="${k}">${CH[k].name}${dv}</button>`}).join("");
 }
 
