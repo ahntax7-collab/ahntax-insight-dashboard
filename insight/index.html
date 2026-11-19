@@ -6,14 +6,17 @@
 :root{
   --bg:#f4f5f3; --panel:#ffffff; --line:#dde2de; --grid:#eceeeb;
   --fg:#15201c; --fg2:#4b5853; --muted:#7a8681;
+  --card:#b4530a; --card-bg:#fcecdc;
   --accent:#0f6b5c; --accent-soft:#e1eeea; --bar:#2a78d6; --up:#1a7f4b; --up-bg:#e3f3ea; --idle:#6c7672; --idle-bg:#eceeec;
   --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --card:#f2a65a; --card-bg:#3a2816;
   --bg:#101614; --panel:#18201d; --line:#2a3531; --grid:#222b28; --fg:#e8eeeb; --fg2:#b3beb9; --muted:#85918c;
   --accent:#4fbfa8; --accent-soft:#1d332d; --bar:#3987e5; --up:#5cc88f; --up-bg:#17301f; --idle:#98a39e; --idle-bg:#242d2a; color-scheme:dark}}
 :root[data-theme="dark"]{
+  --card:#f2a65a; --card-bg:#3a2816;
   --bg:#101614; --panel:#18201d; --line:#2a3531; --grid:#222b28; --fg:#e8eeeb; --fg2:#b3beb9; --muted:#85918c;
   --accent:#4fbfa8; --accent-soft:#1d332d; --bar:#3987e5; --up:#5cc88f; --up-bg:#17301f; --idle:#98a39e; --idle-bg:#242d2a; color-scheme:dark}
 *{box-sizing:border-box}
@@ -104,6 +107,9 @@ details[open] summary::after{content:"접기"}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .ic{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
 .pill.wk{background:var(--idle-bg);color:var(--idle)}
+.cardnews{border-left:3px solid var(--card)}
+.cardnews .v-no{color:var(--card)}
+.cardnews .pill{background:var(--card-bg);color:var(--card)}
 .tbl{overflow-x:auto;margin-inline:-2px}
 .tbl table{border-collapse:collapse;width:100%;min-width:420px;font-size:12px}
 .tbl th{font-size:10px;color:var(--muted);font-weight:600;text-align:right;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -329,7 +335,7 @@ function cardPostCard(id,v){
   const keys=["views","likes","comments","saves","shares","reposts","follows"].filter(k=>c.fields.some(([f])=>f===k)); const lab=Object.fromEntries(c.fields);
   const rows=[]; let prev=null; for(const d of cdays){ if(d.date>cur) break; const x=(d.metrics||{})[id]?.[tab]; if(!x) continue; const dp=v.uploaded?Math.round((new Date(d.date)-new Date(v.uploaded))/864e5):"";
     rows.push(`<tr><td>${d.date.slice(5)}<span class="sub">D+${dp}</span></td>${keys.map(k=>{const dv=x[k]==null?null:(Number(x[k])||0)-(Number(prev?.[k])||0);return `<td>${fmt(x[k])}<span class="sub">${dv==null?"":dStr(dv)}</span></td>`}).join("")}</tr>`); prev=x;}
-  return `<article class="card video">
+  return `<article class="card video cardnews">
     <div class="v-h"><div><div class="v-no">${esc(v.no)}${dPlus===0||dPlus===1?'<span class="pill">NEW</span>':""}</div><div class="v-title">${esc(v.title)}</div></div>
       ${link?`<a class="link" href="${esc(link)}" target="_blank" rel="noopener">게시물 ↗</a>`:""}
       <div class="v-meta">업로드 ${esc(v.uploaded)} · D+${dPlus??"—"} · 이미지 게시물${at&&!today?` · 마지막 수집 ${esc(at.date)}`:""}</div></div>
@@ -362,7 +368,7 @@ function cardsView(){
     const notes=CARD_CH.map(([ch,l])=>{const at=cardSnapAt(cur,id,ch); return at?.s?.note?`${l}: ${at.s.note}`:""}).filter(Boolean);
     const cm=ccomments[id]||{}; const allC=CARD_CH.flatMap(([ch,l])=>(cm[ch]||[]).map(x=>({...x,_ch:l})));
     const links=CARD_CH.filter(([ch])=>/^https?:/.test(v.posts?.[ch]||"")).map(([ch,l])=>`<a class="link" href="${esc(v.posts[ch])}" target="_blank" rel="noopener">${l} ↗</a>`).join("");
-    html+=`<article class="card video">
+    html+=`<article class="card video cardnews">
       <div class="v-h"><div><div class="v-no">${esc(v.no)}${dPlus===0||dPlus===1?'<span class="pill">NEW</span>':""}</div><div class="v-title">${esc(v.title)}</div></div>
         <div class="v-meta">업로드 ${esc(v.uploaded)} · D+${dPlus??"—"}</div></div>
       <div class="tbl"><table><thead><tr><th>채널</th><th>조회</th><th>좋아요</th><th>댓글</th><th>저장</th><th>공유</th><th>저장률</th></tr></thead><tbody>${rows}</tbody></table></div>
