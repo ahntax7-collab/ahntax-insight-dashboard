@@ -330,7 +330,7 @@ function cardPostCard(id,v){
   const rows=[]; let prev=null; for(const d of cdays){ if(d.date>cur) break; const x=(d.metrics||{})[id]?.[tab]; if(!x) continue; const dp=v.uploaded?Math.round((new Date(d.date)-new Date(v.uploaded))/864e5):"";
     rows.push(`<tr><td>${d.date.slice(5)}<span class="sub">D+${dp}</span></td>${keys.map(k=>{const dv=x[k]==null?null:(Number(x[k])||0)-(Number(prev?.[k])||0);return `<td>${fmt(x[k])}<span class="sub">${dv==null?"":dStr(dv)}</span></td>`}).join("")}</tr>`); prev=x;}
   return `<article class="card video">
-    <div class="v-h"><div><div class="v-no">${esc(v.no)} · 카드뉴스 · ${esc(CARD_SERIES[v.series]||v.series||"")}${dPlus===0||dPlus===1?'<span class="pill">NEW</span>':""}</div><div class="v-title">${esc(v.title)}</div></div>
+    <div class="v-h"><div><div class="v-no">${esc(v.no)}${dPlus===0||dPlus===1?'<span class="pill">NEW</span>':""}</div><div class="v-title">${esc(v.title)}</div></div>
       ${link?`<a class="link" href="${esc(link)}" target="_blank" rel="noopener">게시물 ↗</a>`:""}
       <div class="v-meta">업로드 ${esc(v.uploaded)} · D+${dPlus??"—"} · 이미지 게시물${at&&!today?` · 마지막 수집 ${esc(at.date)}`:""}</div></div>
     <div class="metrics">${c.fields.map(([k,l])=>{const dv=today?delta(s,p,k):null;return `<div class="m"><span class="t">${l}</span><span class="v">${fmt(s?.[k])}</span><span class="dlt ${dv?"":"zero"}">${dv==null?"":"오늘 "+dStr(dv)}</span></div>`}).join("")}</div>
@@ -363,7 +363,7 @@ function cardsView(){
     const cm=ccomments[id]||{}; const allC=CARD_CH.flatMap(([ch,l])=>(cm[ch]||[]).map(x=>({...x,_ch:l})));
     const links=CARD_CH.filter(([ch])=>/^https?:/.test(v.posts?.[ch]||"")).map(([ch,l])=>`<a class="link" href="${esc(v.posts[ch])}" target="_blank" rel="noopener">${l} ↗</a>`).join("");
     html+=`<article class="card video">
-      <div class="v-h"><div><div class="v-no">${esc(v.no)} · ${esc(CARD_SERIES[v.series]||v.series||"")}${dPlus===0||dPlus===1?'<span class="pill">NEW</span>':""}</div><div class="v-title">${esc(v.title)}</div></div>
+      <div class="v-h"><div><div class="v-no">${esc(v.no)}${dPlus===0||dPlus===1?'<span class="pill">NEW</span>':""}</div><div class="v-title">${esc(v.title)}</div></div>
         <div class="v-meta">업로드 ${esc(v.uploaded)} · D+${dPlus??"—"}</div></div>
       <div class="tbl"><table><thead><tr><th>채널</th><th>조회</th><th>좋아요</th><th>댓글</th><th>저장</th><th>공유</th><th>저장률</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="note" style="margin:0">조회 아래 작은 숫자는 직전 수집 대비 증가</p>
